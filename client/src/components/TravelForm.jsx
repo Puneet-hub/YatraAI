@@ -27,27 +27,42 @@ export default function TravelForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 🔒 Hard request lock
+    if (loading) return;
+
     setLoading(true);
     setError("");
     setPlan("");
 
     try {
-    const res = await fetch(
-  `${import.meta.env.VITE_API_BASE_URL}/generate-plan`,
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(formData),
-  }
-);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/generate-plan`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }
+      );
 
+      // ❗ Safe error handling (handles 429 non-JSON responses)
+      if (!res.ok) {
+        let message = "AI is busy. Please try again later.";
+
+        try {
+          const errorData = await res.json();
+          message = errorData.error || message;
+        } catch {
+          // non-JSON error (rate limit, gateway, etc.)
+        }
+
+        throw new Error(message);
+      }
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong");
-
       setPlan(data.plan);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -60,32 +75,20 @@ export default function TravelForm() {
         className="bg-white rounded-2xl shadow-sm p-8 space-y-8"
       >
         {/* Header */}
-<div className="space-y-1">
-  <h2 className="flex flex-wrap items-baseline gap-2 text-gray-900">
-    <span className="text-xl font-medium">
-      You dream the trip,
-    </span>
-
-    <span className="text-3xl font-bold text-blue-600">
-      YatraAI
-    </span>
-
-    <span className="text-xl font-medium">
-      plans it
-    </span>
-  </h2>
-
-  <p className="text-sm text-gray-500">
-    AI-powered travel planning in seconds.
-  </p>
-</div>
+        <div className="space-y-1">
+          <h2 className="flex flex-wrap items-baseline gap-2 text-gray-900">
+            <span className="text-xl font-medium">You dream the trip,</span>
+            <span className="text-3xl font-bold text-blue-600">YatraAI</span>
+            <span className="text-xl font-medium">plans it</span>
+          </h2>
+          <p className="text-sm text-gray-500">
+            AI-powered travel planning in seconds.
+          </p>
+        </div>
 
         {/* Journey */}
         <div className="space-y-4">
-          <p className="text-xs font-medium text-gray-400 uppercase">
-            Journey
-          </p>
-
+          <p className="text-xs font-medium text-gray-400 uppercase">Journey</p>
           <div className="grid md:grid-cols-2 gap-4">
             <InputField
               icon={MapPin}
@@ -109,7 +112,6 @@ export default function TravelForm() {
           <p className="text-xs font-medium text-gray-400 uppercase">
             Budget & Duration
           </p>
-
           <div className="grid md:grid-cols-2 gap-4">
             <InputField
               icon={IndianRupee}
@@ -139,13 +141,7 @@ export default function TravelForm() {
               name="travelType"
               value={formData.travelType}
               onChange={handleChange}
-              className="
-                w-full bg-gray-50
-                border-0 outline-none ring-0 appearance-none
-                rounded-lg pl-9 pr-3 py-2.5
-                text-sm text-gray-700
-                focus:bg-white transition
-              "
+              className="w-full bg-gray-50 border-0 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-700 focus:bg-white transition"
             >
               <option>Solo</option>
               <option>Couple</option>
@@ -174,16 +170,11 @@ export default function TravelForm() {
         {/* Submit Button */}
         <button
           disabled={loading}
-          className={`
-            w-full py-3 rounded-xl text-sm font-medium
-            flex items-center justify-center gap-3
-            transition-all duration-300
-            ${
-              loading
-                ? "bg-blue-500 text-white cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }
-          `}
+          className={`w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-3 transition-all duration-300 ${
+            loading
+              ? "bg-blue-500 text-white cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
         >
           {loading ? (
             <>
@@ -204,12 +195,14 @@ export default function TravelForm() {
       {/* Error */}
       {error && (
         <p className="mt-4 text-center text-sm text-red-500">
-          {error}
+          ⚠️ {error.includes("busy")
+            ? "AI is busy right now. Please try again after some time."
+            : error}
         </p>
       )}
 
       {/* Results */}
-      {loading && <SkeletonResult />}
+      {loading && !error && <SkeletonResult />}
       {!loading && plan && (
         <ResultCard
           plan={plan}
