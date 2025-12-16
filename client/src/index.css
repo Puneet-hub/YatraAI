@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🌍 Global styles */
+body {
+  background-color: #f9fafb;
+  font-family: "Poppins", "Inter", system-ui, sans-serif;
+}
