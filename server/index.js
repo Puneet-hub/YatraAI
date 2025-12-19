@@ -9,13 +9,13 @@ const app = express();
 
 app.use(
   cors({
-    origin: "*", // You can restrict later
+    origin: "*", // Can restrict later to Vercel domain
   })
 );
 
 app.use(express.json());
 
-// OpenAI client
+// ---------------- OPENAI CLIENT ----------------
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -33,28 +33,127 @@ app.post("/generate-plan", async (req, res) => {
   } = req.body;
 
   const prompt = `
-You are YatraAI — an expert Indian travel planner who plans trips step-by-step like a human travel expert.
+You are **YatraAI**, an expert Indian travel planner who creates plans exactly like a professional human travel consultant.
 
-Create a COMPLETE, DETAILED, EXPERIENCE-FOCUSED travel plan.
+Create a **VERY DETAILED, WELL-SPACED, EASY-TO-READ travel plan**.
 
-User Details:
-From: ${from}
-To: ${to}
-Departure Date: ${departureDate || "User selected date"}
-Return Date: ${returnDate || "User selected date"}
-Budget: ₹${budget}
-Travel Type: ${travelType}
+---
 
-IMPORTANT RULES:
-- Output must be in MARKDOWN
-- Be very detailed and practical
-- Do NOT skip sightseeing, cafes, or experience details
-- Include BOTH onward and return journey
-- Mention booking platforms clearly by name (IRCTC, RedBus, OYO, Booking.com, Zomato, Google Maps)
-- Mention BEST TIME to visit places for views and crowd avoidance
-- Mention TIME MANAGEMENT tips
+## 🧾 TRIP OVERVIEW
+- **From:** ${from}
+- **To:** ${to}
+- **Departure Date:** ${departureDate || "User selected date"}
+- **Return Date:** ${returnDate || "User selected date"}
+- **Duration:** ${days} days
+- **Budget:** ₹${budget}
+- **Travel Type:** ${travelType}
 
-Create a day-wise itinerary for EXACTLY ${days} days.
+---
+
+## 🚆 STEP 1: ONWARD JOURNEY (${from} → ${to})
+
+### 🚆 Train Options
+Provide **2–3 realistic Indian Railways options**.  
+For each option include:
+- Train name & number  
+- Departure & arrival time  
+- Duration  
+- Fare (General / Sleeper / 3A)  
+- **Booking Platform:** IRCTC  
+
+### 🚌 Bus Options
+Provide **2–3 bus options**.  
+Include:
+- Bus operator name  
+- Bus type (AC / Sleeper / Volvo)  
+- Timing & duration  
+- Fare  
+- **Booking Platforms:** RedBus, AbhiBus  
+
+---
+
+## 🏨 STEP 2: STAY & HOTELS (Budget + Comfortable)
+
+List **4–6 hotels**.
+
+For each hotel include:
+- **Hotel Name**
+- Area & distance from main attractions
+- Approx price per night
+- Why it is good for this trip
+- **Booking Platforms:** OYO, Booking.com, MakeMyTrip
+
+---
+
+## 🗺 STEP 3: DAY-WISE SIGHTSEEING PLAN
+
+Create a **day-wise itinerary for EXACTLY ${days} days**.  
+Do NOT add or remove days.
+
+### Each day MUST include:
+**Morning**
+- Activities
+- Best time to visit
+
+**Afternoon**
+- Sightseeing
+- Lunch suggestions
+
+**Evening**
+- Walks / markets / viewpoints
+- Sunset timing (if applicable)
+
+**Tips**
+- Crowd avoidance tips
+- Time-saving tips
+- Local transport advice
+
+---
+
+## ☕ STEP 4: CAFES & RESTAURANTS
+
+List **5–7 popular and budget-friendly places**.
+
+For each place include:
+- What to try
+- Approx cost for one
+- **Platform:** Zomato / Google Maps
+
+---
+
+## 🌄 STEP 5: VIEWPOINTS & PHOTOGRAPHY TIPS
+
+Include:
+- Best sunrise & sunset points
+- Golden hour timings
+- Crowd-free time slots
+- Seasonal weather tips
+
+---
+
+## 🔁 STEP 6: RETURN JOURNEY (${to} → ${from})
+
+Provide:
+- Train options
+- Bus options
+- Fare, timing & duration
+- **Booking Platforms:** IRCTC, RedBus
+- Best recommended option
+
+---
+
+## ⏱ STEP 7: SMART TIME & MONEY TIPS
+
+Include:
+- How to avoid rush
+- Where to save money
+- What to skip if short on time
+- Local travel hacks
+
+---
+
+### ⚠️ IMPORTANT NOTE
+⚠️ *Train/bus timings, fares, and hotel availability may vary. Always verify on official platforms before booking.*
 `;
 
   try {
