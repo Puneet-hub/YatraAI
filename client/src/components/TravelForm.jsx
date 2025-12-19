@@ -21,45 +21,31 @@ export default function TravelForm() {
   const [plan, setPlan] = useState("");
   const [error, setError] = useState("");
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // 🔒 Hard request lock
-    if (loading) return;
-
     setLoading(true);
     setError("");
     setPlan("");
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/generate-plan`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      // ❗ Safe error handling (handles 429 non-JSON responses)
-      if (!res.ok) {
-        let message = "AI is busy. Please try again later.";
-
-        try {
-          const errorData = await res.json();
-          message = errorData.error || message;
-        } catch {
-          // non-JSON error (rate limit, gateway, etc.)
-        }
-
-        throw new Error(message);
-      }
+      const res = await fetch(`${API_URL}/generate-plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate plan");
+      }
+
       setPlan(data.plan);
     } catch (err) {
       setError(err.message || "Something went wrong");
@@ -141,7 +127,7 @@ export default function TravelForm() {
               name="travelType"
               value={formData.travelType}
               onChange={handleChange}
-              className="w-full bg-gray-50 border-0 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-700 focus:bg-white transition"
+              className="w-full bg-gray-50 border-0 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-700"
             >
               <option>Solo</option>
               <option>Couple</option>
@@ -167,42 +153,27 @@ export default function TravelForm() {
           />
         </div>
 
-        {/* Submit Button */}
+        {/* Submit */}
         <button
           disabled={loading}
-          className={`w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-3 transition-all duration-300 ${
+          className={`w-full py-3 rounded-xl text-sm font-medium transition ${
             loading
-              ? "bg-blue-500 text-white cursor-not-allowed"
+              ? "bg-blue-400 text-white cursor-not-allowed"
               : "bg-blue-600 text-white hover:bg-blue-700"
           }`}
         >
-          {loading ? (
-            <>
-              <span className="animate-bounce">🚌</span>
-              <span className="animate-pulse">✈️</span>
-              <span className="animate-bounce delay-150">🏔️</span>
-              <span className="ml-2">Planning your trip…</span>
-            </>
-          ) : (
-            "Generate trip"
-          )}
+          {loading ? "Planning your trip…" : "Generate trip"}
         </button>
 
-        {/* AI Loading Status */}
         {loading && <AILoadingStatus />}
       </form>
 
-      {/* Error */}
       {error && (
-        <p className="mt-4 text-center text-sm text-red-500">
-          ⚠️ {error.includes("busy")
-            ? "AI is busy right now. Please try again after some time."
-            : error}
-        </p>
+        <p className="mt-4 text-center text-sm text-red-500">{error}</p>
       )}
 
-      {/* Results */}
-      {loading && !error && <SkeletonResult />}
+      {loading && <SkeletonResult />}
+
       {!loading && plan && (
         <ResultCard
           plan={plan}
